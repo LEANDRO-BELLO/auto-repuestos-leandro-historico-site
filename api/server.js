@@ -7,7 +7,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const DB_PATH = "./data/auto_repuestos_leandro.db";
+const DB_PATH = "./api/data/auto_repuestos_leandro.db";
 
 console.log(DB_PATH);
 console.log("Existe?", fs.existsSync(DB_PATH));
@@ -50,7 +50,7 @@ app.get("/", (req, res) => {
   res.send("API Auto Repuestos Leandro funcionando.");
 });
 
-app.get("/vehiculo/:qr", (req, res) => {
+app.get("/api/vehiculo/:qr", (req, res) => {
   const qr = req.params.qr;
 
   const vehiculo = db.prepare(`
