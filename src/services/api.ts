@@ -1,7 +1,5 @@
 export async function buscarVehiculoPorQr(qrCode: string) {
-  const response = await fetch(
-    `http://192.168.0.116:3001/vehiculo/${qrCode}`
-  );
+  const response = await fetch(`/vehiculo/${qrCode}`);
 
   if (!response.ok) {
     throw new Error("Vehículo no encontrado");
