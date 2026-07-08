@@ -29,7 +29,7 @@ export default function Vehiculo() {
   const { vehiculo, historial } = dados;
 
   function abrirPdf(os: any) {
-    window.open(`http://192.168.0.116:3001/os/${os.id}/pdf`, "_blank");
+    window.open(`/os/${os.id}/pdf`, "_blank");
   }
 
   return (
