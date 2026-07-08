@@ -239,6 +239,12 @@ app.get("/os/:id/pdf", (req, res) => {
   `);
 });
 
+app.use(express.static("dist"));
+
+app.get("*", (req, res) => {
+  res.sendFile(process.cwd() + "/dist/index.html");
+});
+
 const PORT = process.env.PORT || 3001;
 
 app.listen(PORT, "0.0.0.0", () => {
