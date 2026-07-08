@@ -7,8 +7,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const DB_PATH =
-  "C:\\Users\\User\\Documents\\GitHub\\auto-repuestos-leandro-connect\\data\\auto_repuestos_leandro.db";
+const DB_PATH = "./data/auto_repuestos_leandro.db";
 
 console.log(DB_PATH);
 console.log("Existe?", fs.existsSync(DB_PATH));
