@@ -241,7 +241,7 @@ app.get("/os/:id/pdf", (req, res) => {
 
 app.use(express.static("dist"));
 
-app.get("*", (req, res) => {
+app.use((req, res) => {
   res.sendFile(process.cwd() + "/dist/index.html");
 });
 
