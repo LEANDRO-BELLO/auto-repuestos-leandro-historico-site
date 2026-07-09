@@ -195,7 +195,7 @@ app.get("/os/:id/pdf", (req, res) => {
      
           <div class="page">
   <div class="header">
-    <img class="logo-img" src="http://192.168.0.116:5173/src/assets/logo-oficial.png" />
+    <img class="logo-img" src="/assets/logo-oficial-D-tpujhE.png" />
     
     <div>
             <h3>Ventas de repuestos y accesorios en general</h3>
