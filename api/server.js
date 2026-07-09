@@ -12,7 +12,7 @@ const DB_PATH = "./api/data/auto_repuestos_leandro.db";
 console.log(DB_PATH);
 console.log("Existe?", fs.existsSync(DB_PATH));
 
-const db = new Database(DB_PATH, { readonly: true });
+const db = new Database(DB_PATH);
 
 function nomeServicio(codigo) {
   const nomes = {
@@ -48,6 +48,46 @@ function buscarServiciosDaOrden(id) {
 
 app.get("/", (req, res) => {
   res.send("API Auto Repuestos Leandro funcionando.");
+});
+
+app.post("/api/sync/vehiculo", (req, res) => {
+  const v = req.body;
+
+  try {
+    db.prepare(`
+      INSERT INTO vehiculos (
+        id, codigo, cliente_id, placa, marca, modelo, anio,
+        color, motor, combustible, chasis, kilometraje,
+        observaciones, qr_code, data_geracao_qr, creado_en, actualizado_en
+      )
+      VALUES (
+        @id, @codigo, @cliente_id, @placa, @marca, @modelo, @anio,
+        @color, @motor, @combustible, @chasis, @kilometraje,
+        @observaciones, @qr_code, @data_geracao_qr, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+      )
+      ON CONFLICT(id) DO UPDATE SET
+        codigo = excluded.codigo,
+        cliente_id = excluded.cliente_id,
+        placa = excluded.placa,
+        marca = excluded.marca,
+        modelo = excluded.modelo,
+        anio = excluded.anio,
+        color = excluded.color,
+        motor = excluded.motor,
+        combustible = excluded.combustible,
+        chasis = excluded.chasis,
+        kilometraje = excluded.kilometraje,
+        observaciones = excluded.observaciones,
+        qr_code = excluded.qr_code,
+        data_geracao_qr = excluded.data_geracao_qr,
+        actualizado_en = CURRENT_TIMESTAMP
+    `).run(v);
+
+    res.json({ ok: true });
+  } catch (error) {
+    console.error("Erro sync vehiculo:", error);
+    res.status(500).json({ ok: false, error: error.message });
+  }
 });
 
 app.get("/api/vehiculo/:qr", (req, res) => {
