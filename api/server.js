@@ -53,6 +53,52 @@ app.get("/", (req, res) => {
 app.post("/api/sync/vehiculo", (req, res) => {
   const v = req.body;
 
+  app.post("/api/sync/orden", (req, res) => {
+    const { orden, servicios } = req.body;
+  
+    try {
+      db.prepare(`
+        INSERT INTO ordenes_trabajo (
+          id, numero_os, cliente_id, vehiculo_id, fecha, kilometraje,
+          intervalo, proximo_km, fecha_vencimiento, observaciones,
+          estado, numero_factura, creado_en, actualizado_en
+        )
+        VALUES (
+          @id, @numero_os, @cliente_id, @vehiculo_id, @fecha, @kilometraje,
+          @intervalo, @proximo_km, @fecha_vencimiento, @observaciones,
+          @estado, @numero_factura, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+        )
+        ON CONFLICT(id) DO UPDATE SET
+          numero_os = excluded.numero_os,
+          cliente_id = excluded.cliente_id,
+          vehiculo_id = excluded.vehiculo_id,
+          fecha = excluded.fecha,
+          kilometraje = excluded.kilometraje,
+          intervalo = excluded.intervalo,
+          proximo_km = excluded.proximo_km,
+          fecha_vencimiento = excluded.fecha_vencimiento,
+          observaciones = excluded.observaciones,
+          estado = excluded.estado,
+          numero_factura = excluded.numero_factura,
+          actualizado_en = CURRENT_TIMESTAMP
+      `).run(orden);
+  
+      db.prepare("DELETE FROM ordenes_servicios WHERE orden_id = ?").run(orden.id);
+  
+      for (const s of servicios || []) {
+        db.prepare(`
+          INSERT INTO ordenes_servicios (orden_id, servicio, proximo_km)
+          VALUES (?, ?, ?)
+        `).run(orden.id, s.servicio, s.proximo_km || null);
+      }
+  
+      res.json({ ok: true });
+    } catch (error) {
+      console.error("Erro sync orden:", error);
+      res.status(500).json({ ok: false, error: error.message });
+    }
+  });
+
   try {
     db.prepare(`
       INSERT INTO vehiculos (
