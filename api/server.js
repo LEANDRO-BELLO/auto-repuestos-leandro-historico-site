@@ -279,6 +279,39 @@ app.get("/os/:id/pdf", (req, res) => {
   `);
 });
 
+app.post("/api/sync/orden", (req, res) => {
+  const { orden, servicios } = req.body;
+
+  try {
+    db.prepare(`
+      INSERT OR REPLACE INTO ordenes_trabajo (
+        id, numero_os, cliente_id, vehiculo_id, fecha, kilometraje,
+        intervalo, proximo_km, fecha_vencimiento, observaciones,
+        estado, numero_factura, actualizado_en
+      )
+      VALUES (
+        @id, @numero_os, @cliente_id, @vehiculo_id, @fecha, @kilometraje,
+        @intervalo, @proximo_km, @fecha_vencimiento, @observaciones,
+        @estado, @numero_factura, CURRENT_TIMESTAMP
+      )
+    `).run(orden);
+
+    db.prepare("DELETE FROM ordenes_servicios WHERE orden_id = ?").run(orden.id);
+
+    for (const s of servicios || []) {
+      db.prepare(`
+        INSERT INTO ordenes_servicios (orden_id, servicio, proximo_km)
+        VALUES (?, ?, ?)
+      `).run(orden.id, s.servicio, s.proximo_km || null);
+    }
+
+    res.json({ ok: true });
+  } catch (error) {
+    console.error("Erro sync orden:", error);
+    res.status(500).json({ ok: false, error: error.message });
+  }
+});
+
 app.use(express.static("dist"));
 
 app.use((req, res) => {
