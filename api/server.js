@@ -50,6 +50,53 @@ app.get("/", (req, res) => {
   res.send("API Auto Repuestos Leandro funcionando.");
 });
 
+app.post("/api/sync/cliente", (req, res) => {
+  const cliente = req.body;
+
+  try {
+    db.prepare(`
+      INSERT INTO clientes (
+        id,
+        codigo,
+        nombre,
+        direccion,
+        numero_documento,
+        creado_en,
+        actualizado_en
+      )
+      VALUES (
+        @id,
+        @codigo,
+        @nombre,
+        @direccion,
+        @numero_documento,
+        CURRENT_TIMESTAMP,
+        CURRENT_TIMESTAMP
+      )
+      ON CONFLICT(id) DO UPDATE SET
+        codigo = excluded.codigo,
+        nombre = excluded.nombre,
+        direccion = excluded.direccion,
+        numero_documento = excluded.numero_documento,
+        actualizado_en = CURRENT_TIMESTAMP
+    `).run({
+      id: cliente.id,
+      codigo: cliente.codigo || null,
+      nombre: cliente.nombre,
+      direccion: cliente.direccion || null,
+      numero_documento: cliente.numero_documento || null
+    });
+
+    res.json({ ok: true });
+  } catch (error) {
+    console.error("Erro sync cliente:", error);
+    res.status(500).json({
+      ok: false,
+      error: error.message
+    });
+  }
+});
+
 app.post("/api/sync/vehiculo", (req, res) => {
   const v = req.body;
 
