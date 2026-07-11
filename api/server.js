@@ -59,8 +59,14 @@ app.post("/api/sync/cliente", (req, res) => {
         id,
         codigo,
         nombre,
+        documento,
+        telefono,
+        whatsapp,
+        email,
         direccion,
-        numero_documento,
+        ciudad,
+        observaciones,
+        ultima_visita,
         creado_en,
         actualizado_en
       )
@@ -68,35 +74,53 @@ app.post("/api/sync/cliente", (req, res) => {
         @id,
         @codigo,
         @nombre,
+        @documento,
+        @telefono,
+        @whatsapp,
+        @email,
         @direccion,
-        @numero_documento,
+        @ciudad,
+        @observaciones,
+        @ultima_visita,
         CURRENT_TIMESTAMP,
         CURRENT_TIMESTAMP
       )
       ON CONFLICT(id) DO UPDATE SET
         codigo = excluded.codigo,
         nombre = excluded.nombre,
+        documento = excluded.documento,
+        telefono = excluded.telefono,
+        whatsapp = excluded.whatsapp,
+        email = excluded.email,
         direccion = excluded.direccion,
-        numero_documento = excluded.numero_documento,
+        ciudad = excluded.ciudad,
+        observaciones = excluded.observaciones,
+        ultima_visita = excluded.ultima_visita,
         actualizado_en = CURRENT_TIMESTAMP
     `).run({
       id: cliente.id,
       codigo: cliente.codigo || null,
       nombre: cliente.nombre,
+      documento: cliente.documento || null,
+      telefono: cliente.telefono || null,
+      whatsapp: cliente.whatsapp || null,
+      email: cliente.email || null,
       direccion: cliente.direccion || null,
-      numero_documento: cliente.numero_documento || null
+      ciudad: cliente.ciudad || null,
+      observaciones: cliente.observaciones || null,
+      ultima_visita: cliente.ultima_visita || null
     });
 
     res.json({ ok: true });
   } catch (error) {
     console.error("Erro sync cliente:", error);
+
     res.status(500).json({
       ok: false,
       error: error.message
     });
   }
 });
-
 app.post("/api/sync/vehiculo", (req, res) => {
   const v = req.body;
 
