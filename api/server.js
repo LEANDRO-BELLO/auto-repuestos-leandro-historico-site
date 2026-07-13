@@ -121,13 +121,64 @@ app.post("/api/sync/cliente", (req, res) => {
     });
   }
 });
+
 app.post("/api/sync/vehiculo", (req, res) => {
   const v = req.body;
 
-  app.post("/api/sync/orden", (req, res) => {
-    const { orden, servicios } = req.body;
-  
-    try {
+  try {
+    db.prepare(`
+      INSERT INTO vehiculos (
+        id, codigo, cliente_id, placa, marca, modelo, anio,
+        color, motor, combustible, chasis, kilometraje,
+        observaciones, qr_code, data_geracao_qr, creado_en, actualizado_en
+      )
+      VALUES (
+        @id, @codigo, @cliente_id, @placa, @marca, @modelo, @anio,
+        @color, @motor, @combustible, @chasis, @kilometraje,
+        @observaciones, @qr_code, @data_geracao_qr,
+        CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+      )
+      ON CONFLICT(id) DO UPDATE SET
+        codigo = excluded.codigo,
+        cliente_id = excluded.cliente_id,
+        placa = excluded.placa,
+        marca = excluded.marca,
+        modelo = excluded.modelo,
+        anio = excluded.anio,
+        color = excluded.color,
+        motor = excluded.motor,
+        combustible = excluded.combustible,
+        chasis = excluded.chasis,
+        kilometraje = excluded.kilometraje,
+        observaciones = excluded.observaciones,
+        qr_code = excluded.qr_code,
+        data_geracao_qr = excluded.data_geracao_qr,
+        actualizado_en = CURRENT_TIMESTAMP
+    `).run(v);
+
+    res.json({ ok: true });
+  } catch (error) {
+    console.error("Erro sync vehiculo:", error);
+
+    res.status(500).json({
+      ok: false,
+      error: error.message
+    });
+  }
+});
+
+app.post("/api/sync/orden", (req, res) => {
+  const { orden, servicios = [] } = req.body;
+
+  try {
+    if (!orden?.id) {
+      return res.status(400).json({
+        ok: false,
+        error: "Datos de la orden inválidos"
+      });
+    }
+
+    const sincronizarOrden = db.transaction(() => {
       db.prepare(`
         INSERT INTO ordenes_trabajo (
           id, numero_os, cliente_id, vehiculo_id, fecha, kilometraje,
@@ -153,60 +204,42 @@ app.post("/api/sync/vehiculo", (req, res) => {
           numero_factura = excluded.numero_factura,
           actualizado_en = CURRENT_TIMESTAMP
       `).run(orden);
-  
-      db.prepare("DELETE FROM ordenes_servicios WHERE orden_id = ?").run(orden.id);
-  
-      for (const s of servicios || []) {
-        db.prepare(`
-          INSERT INTO ordenes_servicios (orden_id, servicio, proximo_km)
-          VALUES (?, ?, ?)
-        `).run(orden.id, s.servicio, s.proximo_km || null);
-      }
-  
-      res.json({ ok: true });
-    } catch (error) {
-      console.error("Erro sync orden:", error);
-      res.status(500).json({ ok: false, error: error.message });
-    }
-  });
 
-  try {
-    db.prepare(`
-      INSERT INTO vehiculos (
-        id, codigo, cliente_id, placa, marca, modelo, anio,
-        color, motor, combustible, chasis, kilometraje,
-        observaciones, qr_code, data_geracao_qr, creado_en, actualizado_en
-      )
-      VALUES (
-        @id, @codigo, @cliente_id, @placa, @marca, @modelo, @anio,
-        @color, @motor, @combustible, @chasis, @kilometraje,
-        @observaciones, @qr_code, @data_geracao_qr, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
-      )
-      ON CONFLICT(id) DO UPDATE SET
-        codigo = excluded.codigo,
-        cliente_id = excluded.cliente_id,
-        placa = excluded.placa,
-        marca = excluded.marca,
-        modelo = excluded.modelo,
-        anio = excluded.anio,
-        color = excluded.color,
-        motor = excluded.motor,
-        combustible = excluded.combustible,
-        chasis = excluded.chasis,
-        kilometraje = excluded.kilometraje,
-        observaciones = excluded.observaciones,
-        qr_code = excluded.qr_code,
-        data_geracao_qr = excluded.data_geracao_qr,
-        actualizado_en = CURRENT_TIMESTAMP
-    `).run(v);
+      db.prepare(`
+        DELETE FROM ordenes_servicios
+        WHERE orden_id = ?
+      `).run(orden.id);
+
+      const inserirServicio = db.prepare(`
+        INSERT INTO ordenes_servicios (
+          orden_id,
+          servicio,
+          proximo_km
+        )
+        VALUES (?, ?, ?)
+      `);
+
+      for (const servicio of servicios) {
+        inserirServicio.run(
+          orden.id,
+          servicio.servicio,
+          servicio.proximo_km ?? null
+        );
+      }
+    });
+
+    sincronizarOrden();
 
     res.json({ ok: true });
   } catch (error) {
-    console.error("Erro sync vehiculo:", error);
-    res.status(500).json({ ok: false, error: error.message });
+    console.error("Erro sync orden:", error);
+
+    res.status(500).json({
+      ok: false,
+      error: error.message
+    });
   }
 });
-
 app.get("/api/vehiculo/:qr", (req, res) => {
   const qr = req.params.qr;
 
